@@ -1,0 +1,232 @@
+#include "ros/ros.h"
+#include <stdio.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <cstdlib>
+#include <iostream>
+#include <cmath>
+#include <time.h>
+#include <ctime>
+#include <unistd.h>
+#include <typeinfo>
+
+#include "opencv2/core/core.hpp"
+#include "opencv2/features2d/features2d.hpp"
+#include "opencv2/highgui/highgui.hpp"
+#include "opencv2/imgcodecs.hpp"
+#include <lsd.h>
+
+#include <cs6320/Signal.h>
+
+using namespace cv;
+using namespace std;
+using namespace ros;
+
+void get_intersection(double x1, double y1, double x2, double y2, double x3, double y3, double x4, double y4, bool * valid, double * result)
+{
+//cerr<<x1<<"  "<<y1<<"  "<<x2<<"  "<<y2<<"  "<<x3<<"  "<<y3<<"  "<<x4<<"  "<<y4<<"  "<<endl;
+    //float A2 = y4 - y3;
+    //float B2 = x4 - x3;
+    //float C2 = A2*x3 + B2*y3;
+    
+    //float A1 = y2 - y1;
+    //float B1 = x2 - x1;
+    //float C1 = A1 * x1 + B1 * y1;
+    //float det = A1*B2 - A2*B1;
+    //if (fabs(det) <= 0.1)
+    //{
+    //    if((x1-x2<=1 && x3-x4<=1)||(y1-y2<=1 && y3-y4<=1))
+    //    {
+    //        *valid = false;
+    //        result[0]=1e+20;result[1]=1e+20;
+    //    }else if(x1-x2<=1)
+    //    {
+    //        *valid = false;
+    //        result[0]=(x1+x2)/2.0;
+    //        result[1]=(y3+y4)/2.0;
+    //    }else
+    //    {
+    //        *valid = false;
+    //        result[0]=(x3+x4)/2.0;
+    //        result[1]=(y1+y2)/2.0;
+    //    }
+    //}else{
+    //    *valid = true;
+    //    result[0]=(B2 * C1 - B1 * C2) / det;
+    //    result[1]=(A1 * C2 - A2 * C1) / det;
+    //}
+    float det = (x1-x2)*(y3-y4)-(y1-y2)*(x3-x4);
+    if(fabs(det) <= 0.01)
+    {
+        *valid = false;
+        result[0]=0;
+        result[1]=0;
+    }
+    else
+    {
+        *valid = true;
+        result[0]=((x1*y2-y1*x2) * (x3-x4) - (x1-x2) * (x3*y4-y3*x4)) / det;
+        result[1]=((x1*y2-y1*x2) * (y3-y4) - (y1-y2) * (x3*y4-y3*x4)) / det;
+    }
+    
+}
+
+void weight_average(double * line, int * ransample, int inlier_number, int line_number, double * point)
+{
+    int valid_count=0;
+    double average_x=0, average_y=0;
+    for(int i=0; i<inlier_number; i++)
+    {
+        int line1, line2;
+        line1=ransample[i]/line_number;
+        line2=ransample[i]%line_number;
+        bool valid;
+        double result[2];
+        get_intersection(line[line1*7],line[line1*7+1],line[line1*7+2],line[line1*7+3],line[line2*7],line[line2*7+1],line[line2*7+2],line[line2*7+3], &valid, result);
+        if(valid)
+        {
+            valid_count++;
+            average_x += result[0];
+            average_y += result[1];
+        }
+    }
+    if(valid_count>=1)
+    {
+        average_x = average_x/valid_count;
+        average_y = average_y/valid_count;
+    }
+    point[0]=average_x;
+    point[1]=average_y;
+}
+
+
+void RANSAC(int loop, int inlier_number, double * line, int line_number, double threshold, double * result)
+{
+    result[0]=0; result[1]=0; result[2]=1;
+    result[3]=0; result[4]=0; result[5]=1;
+    result[6]=0; result[7]=0; result[8]=1;
+    int ransample[inlier_number];
+    for(int i=0; i<loop; i++)
+    {
+        for(int j=0; j<inlier_number; j++)
+        {
+            int random_number=1;
+            int line1=0,line2=0;
+            bool valid=false;
+            double result_point[2];
+            do{
+              random_number=rand();
+              random_number=random_number%((int)pow(line_number,2))+1;
+              line1=random_number/line_number;
+              line2=random_number%line_number;
+              get_intersection(line[line1*7],line[line1*7+1],line[line1*7+2],line[line1*7+3],line[line2*7],line[line2*7+1],line[line2*7+2],line[line2*7+3], &valid, result_point);
+            } while(random_number%line_number==random_number/line_number+1 || valid==false);
+            ransample[j] = random_number;
+        }
+        //cerr<<".";
+        double point[2];
+        weight_average(line, ransample, inlier_number, line_number, point);
+        //cerr<<point[0]<<",  "<<point[1]<<endl;
+        int count_inlier=0;
+        for(int j=1; j<pow(line_number,2); j++)
+        {
+            int line1, line2;
+            bool valid=false;
+            double result_point[2];
+            line1=j/line_number;
+            line2=j%line_number;
+            get_intersection(line[line1*7],line[line1*7+1],line[line1*7+2],line[line1*7+3],line[line2*7],line[line2*7+1],line[line2*7+2],line[line2*7+3], &valid, result_point);
+            if(valid == true)
+            {
+                if(sqrt( (result_point[0]-point[0])*(result_point[0]-point[0]) + (result_point[1]-point[1])*(result_point[1]-point[1]) ) < threshold)
+                    count_inlier++;
+            }
+        }
+        for(int j=0; j<3; j++)
+        {
+            if(count_inlier>result[j*3+2])
+            {
+                if(j<=1) {result[6]=result[3]; result[7]=result[4]; result[8]=result[5];}
+                if(j==0) {result[3]=result[0]; result[4]=result[1]; result[5]=result[2];}
+                result[j*3]=point[0];
+                result[j*3+1]=point[1];
+                result[j*3+2]=count_inlier;
+                break;
+            }
+        }
+    }
+}
+
+
+
+int main( int argc,char** argv)  
+{   
+    ros::init(argc, argv, "cs6320");
+    ros::NodeHandle n;
+    
+    ros::Publisher signal_pub = n.advertise<cs6320::Signal>("position_attitude", 1000);
+    ros::Rate loop_rate(100);
+    
+    int line_number=0;
+    double * out, result[9];
+    
+    
+    //Define parameter
+    int loop = 500;
+    int weight_average = 2;
+    int threshold = 100;
+    
+    const cv::Mat input = cv::imread("/home/jack/catkin_ws/src/cs6320_project/figure/1.jpg", 0); //Load as grayscale 
+    int X=input.rows, Y=input.cols;
+    cout<<"Image size: "<<Y<<" x "<<X<<endl;
+    
+		cv::Mat dst;
+		// Convert to double (much faster than a simple for loop)
+		input.convertTo(dst, CV_64F, 1, 0);
+		double *ptrDst = dst.ptr<double>(); 
+	  if(dst.isContinuous()) {
+				for(int i = 0; i < dst.total(); ++i) {
+				        double value = ptrDst[i]; // Or do some other stuff
+				}
+		} else {
+				for(int i = 0; i < dst.rows; ++i) {
+				    double *ptrDst = dst.ptr<double>(i);
+
+				    for(int j = 0; j < dst.cols; ++j) {
+				        double value = ptrDst[j];
+				    }
+				}
+		}
+		out = lsd(&line_number,ptrDst,X,Y);
+		if(line_number != 0)
+		  cout<<"Line Segment: "<<line_number<<endl;
+		
+    srand((unsigned)time(0));
+    cout<<"Running "<<loop<<" times with averaging of "<<weight_average<<" points."<<endl;
+    cout<<"Threshold is: "<<threshold<<endl;
+		RANSAC(loop,weight_average,out,line_number,threshold,result);
+		
+		cout<<endl;
+		cout<<"("<<result[0]<<",  "<<result[1]<<")  inlier number: "<<result[2]<<endl;
+		cout<<"("<<result[3]<<",  "<<result[4]<<")  inlier number: "<<result[5]<<endl;
+		cout<<"("<<result[6]<<",  "<<result[7]<<")  inlier number: "<<result[8]<<endl;
+		
+		int count = 0;
+		while (ros::ok())
+    {
+      imshow( "Display window", input );  
+      if(count%100==0)cerr<<".";
+		  //for(int i=0;i<line_number;i++)
+      //{
+      //  for(int j=0;j<7;j++)
+      //    printf("%f ",out[7*i+j]);
+      //  printf("\n");
+      //}  
+		  if(waitKey(30) >= 0) break;
+		  ros::spinOnce();
+      loop_rate.sleep();
+      ++count;
+    }
+    //
+    return 0 ;  
+}  
