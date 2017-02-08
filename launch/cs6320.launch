@@ -2,6 +2,6 @@
 
 <launch>
 
-  <node name="cs6320" pkg="cs6320" type="cs6320" respawn="false" launch-prefix="" output="screen">
+  <node name="cs6320_project" pkg="cs6320_project" type="camera" respawn="false" launch-prefix="" output="screen">
   </node>
 </launch>
