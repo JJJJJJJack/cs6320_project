@@ -1,7 +1,0 @@
-<?xml version="1.0"?>
-
-<launch>
-
-  <node name="signal_sub_pub" pkg="signal_sub_pub" type="cs6320" respawn="false" launch-prefix="" output="screen">
-  </node>
-</launch>

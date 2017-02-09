@@ -20,13 +20,14 @@ int main( int argc,char** argv)
     ros::init(argc, argv, "cs6320");
     ros::NodeHandle n;
     
-    ros::Publisher signal_pub = n.advertise<cs6320::Signal>("position_attitude", 1000);
     ros::Rate loop_rate(100);
     
     int line_number=0;
     double * out;
     
-    const cv::Mat input = cv::imread("/home/jack/catkin_ws/src/cs6320_project/figure/lena.jpg", 0); //Load as grayscale 
+    stringstream file;
+    file<<"/home/"<<getenv("USER")<<"/catkin_ws/src/cs6320_project/figure/lena.jpg";
+    const cv::Mat input = cv::imread(file.str(), 0); //Load as grayscale 
     int X=input.rows, Y=input.cols;
     
 		cv::Mat dst;
@@ -58,13 +59,7 @@ int main( int argc,char** argv)
       if(count%100==0)cout<<".";
 		  out = lsd(&line_number,ptrDst,X,Y);
 		  cout<<line_number<<endl;
-		  //for(int i=0;i<line_number;i++)
-      //{
-      //  for(int j=0;j<7;j++)
-      //    printf("%f ",out[7*i+j]);
-      //  printf("\n");
-      //}
-		  //cvWaitKey(0);  
+  
 		  if(waitKey(30) >= 0) break;
 		  ros::spinOnce();
       loop_rate.sleep();

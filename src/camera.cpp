@@ -9,8 +9,6 @@
 #include "opencv2/opencv.hpp"
 #include <lsd.h>
 
-#include <cs6320/Signal.h>
-
 using namespace cv;
 using namespace std;
 using namespace ros;
@@ -21,8 +19,6 @@ int main( int argc,char** argv)
 {   
     ros::init(argc, argv, "cs6320");
     ros::NodeHandle n;
-    
-    ros::Publisher signal_pub = n.advertise<cs6320::Signal>("position_attitude", 1000);
     ros::Rate loop_rate(100);
     
     VideoCapture cap(0); // open the default camera
