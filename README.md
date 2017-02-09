@@ -29,5 +29,12 @@ The C++ node needs OpenCV library and its header. Follow the step below to insta
 
 After the above step is done, the node should be good to go.
 
+## Compiling ##
+Do ```catkin_make``` to compile all packages.
+Or ```catkin_make --pkg cs6320_project``` to compile the project package only.
+
 ## Running ##
 Right now two nodes are reserved. *cs6320_project* will load the image stored in figure folder. *camera* will read the default camera (if there is one) and stream out the edge detection result.
+> - ```roscore```
+> - ```rosrun cs6320_project camera```
+> - ```rosrun cs6320_project cs6320_project```
