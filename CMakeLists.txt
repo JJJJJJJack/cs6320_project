@@ -98,7 +98,7 @@ catkin_package(
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
-include_directories(include ${OpenCV_INCLUDE_DIR})
+include_directories(include ${catkin_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIR})
 
 ## Declare a cpp library
 # add_library(cs6320_project
