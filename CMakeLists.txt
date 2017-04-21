@@ -10,7 +10,9 @@ find_package(catkin REQUIRED
   roscpp
   rospy
   std_msgs
-  message_generation)
+  message_generation
+  image_transport
+  cv_bridge)
 
 find_package(OpenCV 3.0.0 REQUIRED)
 
@@ -89,6 +91,8 @@ catkin_package(
 #  LIBRARIES cs6320_project
   CATKIN_DEPENDS #other_catkin_pkg
   message_runtime  std_msgs
+  image_transport
+  cv_bridge
 #  DEPENDS system_lib
 )
 
