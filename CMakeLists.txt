@@ -123,7 +123,9 @@ add_executable(camera
 add_executable(mono-vo
   src/visodo.cpp
 )
-
+add_executable(highlevel
+  src/highlevel.cpp
+)
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
 # add_dependencies(cs6320_project_node cs6320_project_generate_messages_cpp)
@@ -154,7 +156,12 @@ target_link_libraries(mono-vo
   opencv_imgcodecs
   opencv_videoio
 )
-
+target_link_libraries(highlevel
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+  opencv_imgcodecs
+  opencv_videoio
+)
 #############
 ## Install ##
 #############

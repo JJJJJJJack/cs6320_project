@@ -5,6 +5,7 @@
 #include "opencv2/features2d/features2d.hpp"
 #include "opencv2/calib3d/calib3d.hpp"
 #include "nav_msgs/Odometry.h"
+#include "std_srvs/Empty.h"
 
 #include <iostream>
 #include <ctype.h>

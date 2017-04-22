@@ -40,9 +40,9 @@ nav_msgs::Odometry odom;
 void odom_callback(const nav_msgs::Odometry::ConstPtr& msg){
   gettimeofday(&current_timer,NULL);
   double time_interval = (current_timer.tv_sec-previous_timer.tv_sec)+(current_timer.tv_usec-previous_timer.tv_usec)*1e-6;
-  odom_x += time_interval * msg->pose.pose.position.x;
-  odom_y += time_interval * msg->pose.pose.position.y;
-  odom_z += time_interval * msg->pose.pose.position.z;
+  odom_x += time_interval * msg->twist.twist.linear.x;
+  odom_y += time_interval * msg->twist.twist.linear.y;
+  odom_z += time_interval * msg->twist.twist.linear.z;
   previous_timer = current_timer;
 }
 
